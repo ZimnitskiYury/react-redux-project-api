@@ -9,6 +9,8 @@ namespace UserApi.Entities
         {
         }
 
+        public DbSet<FavoriteBeer> FavoriteBeers { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

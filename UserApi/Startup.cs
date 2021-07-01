@@ -8,8 +8,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System;
 using System.Text;
 using UserApi.Entities;
+using UserApi.Services.Favorites;
 using UserApi.Services.Jwt;
 
 namespace UserApi
@@ -28,6 +30,7 @@ namespace UserApi
             services.AddControllers();
 
             services.AddDbContext<UserDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+
             services.AddIdentity<User, IdentityRole>()
                 .AddEntityFrameworkStores<UserDbContext>()
                 .AddDefaultTokenProviders();
@@ -58,13 +61,37 @@ namespace UserApi
             services.Configure<JwtTokenSettings>(tokenSettings);
             services.AddScoped<JwtTokenService>();
 
-            services.AddSwaggerGen(c =>
+            services.AddTransient<FavoritesService>();
+
+            services.AddSwaggerGen(options =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "UserApi", Version = "v1" });
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "UserApi",
+                    Version = "v1"
+                });
+                var jwtSecurityScheme = new OpenApiSecurityScheme
+                {
+                    Description = "Jwt Token is required to access the endpoints",
+                    In = ParameterLocation.Header,
+                    Name = "JWT Authentication",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Reference = new OpenApiReference
+                    {
+                        Id = JwtBearerDefaults.AuthenticationScheme,
+                        Type = ReferenceType.SecurityScheme,
+                    },
+                };
+                options.AddSecurityDefinition("Bearer", jwtSecurityScheme);
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    { jwtSecurityScheme, Array.Empty<string>() },
+                });
             });
         }
 
- 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
