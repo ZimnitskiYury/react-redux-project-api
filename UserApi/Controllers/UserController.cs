@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using UserApi.Entities;
@@ -7,7 +8,7 @@ using UserApi.Services.Jwt;
 
 namespace UserApi.Controllers
 {
-    [Route("[controller]")]
+    [Route("auth")]
     [ApiController]
     public class AuthController : ControllerBase
     {
@@ -50,7 +51,7 @@ namespace UserApi.Controllers
                 LastName = model.LastName,
                 Email = model.Email,
                 UserName = model.Username,
-                BirthDate = model.BirthDate,           
+                BirthDate = model.BirthDate,
             };
 
             await CreateRoleIfNotExists("Admin");
@@ -81,6 +82,15 @@ namespace UserApi.Controllers
             return BadRequest(result.Errors);
         }
 
+        [AllowAnonymous]
+        [HttpGet("validate")]
+        public IActionResult Validate(string token)
+        {
+            return _jwtTokenService.ValidateToken(token) ? Ok() : (IActionResult)Forbid();
+        }
+
+        #region Helpers
+
         private async Task CreateRoleIfNotExists(string role)
         {
             if (!await _roleManager.RoleExistsAsync(role))
@@ -88,5 +98,7 @@ namespace UserApi.Controllers
                 await _roleManager.CreateAsync(new IdentityRole(role));
             }
         }
+
+        #endregion Helpers
     }
 }
